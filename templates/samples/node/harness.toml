@@ -1,0 +1,5 @@
+name    = "node-hello"
+install = "npm ci"
+build   = "npx tsc -p ."
+run     = "node dist/main.js"
+clean   = "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""

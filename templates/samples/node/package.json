@@ -1,0 +1,7 @@
+{
+  "name": "node-hello",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "tsc -p ." },
+  "devDependencies": { "typescript": "^5.5.0", "@types/node": "^22.0.0" }
+}
