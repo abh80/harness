@@ -1,0 +1,4 @@
+name  = "cpp-hello"
+build = "cl /nologo /EHsc /std:c++17 /Fe:hello.exe hello.cpp"
+run   = "./hello.exe"
+clean = "powershell -c \"Remove-Item -ErrorAction SilentlyContinue hello.exe,hello.obj\""
