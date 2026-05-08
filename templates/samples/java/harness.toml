@@ -1,0 +1,4 @@
+name  = "java-hello"
+build = "javac Hello.java && jar cfe Hello.jar Hello Hello.class"
+run   = "java -jar Hello.jar"
+clean = "powershell -c \"Remove-Item -ErrorAction SilentlyContinue Hello.class,Hello.jar\""
