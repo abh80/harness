@@ -3,23 +3,37 @@ Set-StrictMode -Version Latest
 
 function Find-Programs {
     param([string]$Root = (Get-Location).Path, [string]$Program)
+    $skip = @('node_modules','__tests__','.git','.harness','.svn','.hg','target','build','dist','bin','obj','out','.idea','.vscode','.vs')
     $progs = @()
-    Get-ChildItem -LiteralPath $Root -Recurse -Directory | ForEach-Object {
-        $dir = $_
-        $hasManifest = Test-Path (Join-Path $dir.FullName 'harness.toml')
-        $hasConv = @(@('install','build','run','clean') | Where-Object {
-            Test-Path (Join-Path $dir.FullName "$_.ps1")
-        })
-        if ($hasManifest -or $hasConv.Count -gt 0) {
-            if (-not $Program -or $dir.Name -eq $Program) {
-                $progs += [PSCustomObject]@{
-                    Path = $dir.FullName
-                    Name = $dir.Name
-                    HasManifest = $hasManifest
+    Get-ChildItem -LiteralPath $Root -Recurse -Directory -Force |
+        Where-Object {
+            $name = $_.Name
+            if ($name.StartsWith('.')) { return $false }
+            if ($skip -contains $name) { return $false }
+            $rel = $_.FullName.Substring($Root.Length).TrimStart('\','/')
+            $parts = $rel -split '[\\/]'
+            foreach ($p in $parts) {
+                if ($p.StartsWith('.')) { return $false }
+                if ($skip -contains $p) { return $false }
+            }
+            return $true
+        } |
+        ForEach-Object {
+            $dir = $_
+            $hasManifest = Test-Path (Join-Path $dir.FullName 'harness.toml')
+            $hasConv = @(@('install','build','run','clean') | Where-Object {
+                Test-Path (Join-Path $dir.FullName "$_.ps1")
+            })
+            if ($hasManifest -or $hasConv.Count -gt 0) {
+                if (-not $Program -or $dir.Name -eq $Program) {
+                    $progs += [PSCustomObject]@{
+                        Path = $dir.FullName
+                        Name = $dir.Name
+                        HasManifest = $hasManifest
+                    }
                 }
             }
         }
-    }
     return @($progs)
 }
 
@@ -44,21 +58,27 @@ function Invoke-Step {
     if (-not $Cmd) { return [PSCustomObject]@{ ExitCode = 0; Stdout = ''; Stderr = ''; Skipped = $true } }
     $outF = [System.IO.Path]::GetTempFileName()
     $errF = [System.IO.Path]::GetTempFileName()
+    $useStdin = $StdinFile -and (Test-Path $StdinFile)
     try {
         Push-Location $Cwd
-        if ($StdinFile -and (Test-Path $StdinFile)) {
-            $script = "Get-Content -LiteralPath '$StdinFile' -Raw | & { $Cmd } 1> '$outF' 2> '$errF'"
+        if ($useStdin) {
+            # cmd.exe handles native stdin redirect + closes properly on EOF
+            $cmdLine = "$Cmd < `"$StdinFile`" > `"$outF`" 2> `"$errF`""
+            & cmd.exe /c $cmdLine
         } else {
-            $script = "& { $Cmd } 1> '$outF' 2> '$errF'"
+            $script = "& { $Cmd } 1> '$outF' 2> '$errF' 3>`$null 4>`$null 5>`$null 6>`$null"
+            $null = Invoke-Expression $script
         }
-        Invoke-Expression $script
-        $code = $LASTEXITCODE; if ($null -eq $code) { $code = 0 }
-        return [PSCustomObject]@{
-            ExitCode = $code
+        $code = if (Test-Path variable:LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+        if ($null -eq $code) { $code = 0 }
+        $obj = [PSCustomObject]@{
+            ExitCode = [int]$code
             Stdout = (Get-Content -LiteralPath $outF -Raw -ErrorAction SilentlyContinue) ?? ''
             Stderr = (Get-Content -LiteralPath $errF -Raw -ErrorAction SilentlyContinue) ?? ''
             Skipped = $false
         }
+        Write-Output -NoEnumerate $obj
+        return
     } finally {
         Pop-Location
         Remove-Item -LiteralPath $outF,$errF -ErrorAction SilentlyContinue

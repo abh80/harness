@@ -8,6 +8,8 @@ Author program → record expected output → run tests on every change.
 - `<your-program>/harness.toml` — declare install/build/run/clean commands
 - `<your-program>/__tests__/<case>/{in.txt,args.txt,expect.txt,expect.err.txt,exit.txt}`
 
+Scripts scan recursively from the directory you invoke them in, so any nested `<dir>/harness.toml` (or convention scripts) is picked up. Replace `scripts\` below with `.harness\scripts\` if you used the project-level install (`npx create-snap-harness install`).
+
 ## Workflow (PowerShell)
 
 ```powershell
@@ -28,6 +30,14 @@ Author program → record expected output → run tests on every change.
 ./scripts/test.sh --all
 ./scripts/test.sh --program python-hello --filter default
 ./scripts/clean.sh --all --refs
+```
+
+## Refresh scripts
+
+To pull the latest harness scripts without touching your programs or tests:
+
+```bash
+npx create-snap-harness install        # rewrites scripts in-place
 ```
 
 ## Case files

@@ -2,7 +2,7 @@
 import { Command } from 'commander';
 import { resolve } from 'node:path';
 import { runWizard, type WizardResult } from './wizard.js';
-import { scaffold, type Sample } from './scaffold.js';
+import { scaffold, installScripts, type Sample } from './scaffold.js';
 import { gitInit } from './git.js';
 import type { Flavor } from './detect.js';
 
@@ -31,6 +31,23 @@ program
     if (result.gitInit) await gitInit(target, result.initialCommit);
 
     printPostScaffold(target, result.flavor);
+  });
+
+program
+  .command('install')
+  .description('install or refresh harness scripts in an existing project; default location is .harness/scripts')
+  .argument('[target]', 'project directory', '.')
+  .option('--shell <flavor>', 'shell flavor: ps1 | sh | both (default: detected, else required)')
+  .option('--dir <path>', 'scripts directory relative to target (default: .harness/scripts, or existing scripts/)')
+  .action(async function (this: Command, target: string, opts) {
+    const merged = { ...this.optsWithGlobals(), ...opts };
+    const dir = resolve(process.cwd(), target);
+    const result = await installScripts({
+      target: dir,
+      flavor: merged.shell as Flavor | undefined,
+      scriptsDir: merged.dir,
+    });
+    console.log(`Installed ${result.flavor} scripts at ${dir}/${result.scriptsDir}`);
   });
 
 program.parseAsync();

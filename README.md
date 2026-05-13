@@ -1,3 +1,5 @@
+> WIP: not published in npm yet.
+
 # Harness
 
 Harness is a simple diff based testing framework, written in pure native powershell/bash script. Simple and flexible to install, works with any kind of project.
@@ -17,7 +19,7 @@ Works for cpp, java, python, scala, node, rust, go, a bash script you wrote last
 ## Quick start
 
 ```bash
-npx bootstrap-snap-harness my-project
+npx create-snap-harness my-project
 cd my-project
 # PowerShell
 .\scripts\install.ps1 -All
@@ -33,10 +35,24 @@ cd my-project
 
 Run those four scripts in order the first time. After that you mostly just need `test`. Use `record` again whenever you intentionally changed the expected output.
 
+## Adding harness to an existing project
+
+Already have a tree of programs and don't want a full scaffold? Drop scripts into a project root with `install`:
+
+```bash
+npx create-snap-harness install            # current dir, .harness/scripts/, detected flavor
+npx create-snap-harness install ./repo --shell both
+npx create-snap-harness install --dir scripts --shell ps1   # legacy flat layout
+```
+
+`install` only touches `<target>/<scriptsDir>` — your `harness.toml` files, `__tests__/`, and sources are untouched. Re-run it any time to pick up template updates.
+
+Scripts run a recursive scan from wherever you invoke them, so every `<dir>/harness.toml` (or convention `install/build/run/clean.<ext>` script) in the tree gets picked up. Drop the scripts at the root, run `.\.harness\scripts\test.ps1 -All` from there, and every program below gets tested.
+
 ## Flags
 
 ```
-npx bootstrap-snap-harness [<name>] [options]
+npx create-snap-harness [<name>] [options]
   --shell <ps1|sh|both>           shell flavor (default: detected from OS)
   --samples <list>                comma-separated subset of: cpp,java,scala,python,node,none
   --no-git                        skip git init
