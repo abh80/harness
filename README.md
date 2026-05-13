@@ -49,6 +49,20 @@ npx create-snap-harness install --dir scripts --shell ps1   # legacy flat layout
 
 Scripts run a recursive scan from wherever you invoke them, so every `<dir>/harness.toml` (or convention `install/build/run/clean.<ext>` script) in the tree gets picked up. Drop the scripts at the root, run `.\.harness\scripts\test.ps1 -All` from there, and every program below gets tested.
 
+Want to target one subtree? Use `-Recurse` (PowerShell) or `--recurse` (Bash) — points the scan at a single directory and implies `-All` inside it:
+
+```powershell
+.\.harness\scripts\build.ps1 -Recurse .\chapter2
+.\.harness\scripts\test.ps1  -Recurse .\chapter2 -Filter default
+```
+
+```bash
+./.harness/scripts/build.sh --recurse ./chapter2
+./.harness/scripts/test.sh  --recurse ./chapter2 --filter default
+```
+
+Hidden dirs (`.git`, `.harness`, …), `node_modules`, `__tests__`, and common build-output dirs (`dist`, `build`, `out`, `bin`, `obj`, `target`) are skipped automatically.
+
 ## Flags
 
 ```

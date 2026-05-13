@@ -4,16 +4,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/lib/toml.sh"
 . "$SCRIPT_DIR/lib/common.sh"
 
-PATH_ARG="$PWD"; PROGRAM=""; FILTER=""
+PATH_ARG="$PWD"; PROGRAM=""; FILTER=""; RECURSE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --path) PATH_ARG="$2"; shift 2 ;;
     --all) shift ;;
     --program) PROGRAM="$2"; shift 2 ;;
     --filter) FILTER="$2"; shift 2 ;;
+    --recurse) RECURSE="$2"; shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
+if [ -n "$RECURSE" ]; then PATH_ARG="$(cd "$RECURSE" && pwd)"; fi
 
 while read -r dir; do
   [ -z "$dir" ] && continue

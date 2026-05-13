@@ -4,7 +4,23 @@ set -euo pipefail
 # discover_programs <root> [program-name]
 discover_programs() {
   local root="$1" want="${2:-}"
-  find "$root" -type d 2>/dev/null | while read -r d; do
+  local in_git=0
+  if command -v git >/dev/null 2>&1; then
+    if ( cd "$root" && git rev-parse --is-inside-work-tree >/dev/null 2>&1 ); then
+      in_git=1
+    fi
+  fi
+  local candidates
+  candidates="$(find "$root" \
+    \( -type d \( -name node_modules -o -name __tests__ -o -name .git -o -name .harness -o -name .svn -o -name .hg \) -prune \) \
+    -o -type d -print 2>/dev/null)"
+  local ignored_list=""
+  if [ "$in_git" -eq 1 ] && [ -n "$candidates" ]; then
+    ignored_list="$(printf '%s\n' "$candidates" | ( cd "$root" && git check-ignore --stdin 2>/dev/null ) || true)"
+  fi
+  printf '%s\n' "$candidates" | while read -r d; do
+    [ -z "$d" ] && continue
+    if [ -n "$ignored_list" ] && printf '%s\n' "$ignored_list" | grep -Fxq "$d"; then continue; fi
     local has=0
     [ -f "$d/harness.toml" ] && has=1
     for s in install build run clean; do

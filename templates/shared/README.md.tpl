@@ -10,6 +10,8 @@ Author program → record expected output → run tests on every change.
 
 Scripts scan recursively from the directory you invoke them in, so any nested `<dir>/harness.toml` (or convention scripts) is picked up. Replace `scripts\` below with `.harness\scripts\` if you used the project-level install (`npx create-snap-harness install`).
 
+Use `-Recurse <dir>` (PowerShell) or `--recurse <dir>` (Bash) on any script to limit the scan to one subtree; it implies `-All` inside it. Hidden dirs, `node_modules`, `__tests__`, and common build output dirs are skipped automatically.
+
 ## Workflow (PowerShell)
 
 ```powershell

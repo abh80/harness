@@ -1,39 +1,56 @@
 Set-StrictMode -Version Latest
 . $PSScriptRoot\toml.ps1
 
+function Get-GitIgnoredSet {
+    param([string]$Root, [string[]]$Paths)
+    $set = @{}
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return $set }
+    Push-Location $Root
+    try {
+        $null = & git rev-parse --is-inside-work-tree 2>$null
+        if ($LASTEXITCODE -ne 0) { return $set }
+        if (-not $Paths -or $Paths.Count -eq 0) { return $set }
+        $ignored = $Paths | & git check-ignore --stdin 2>$null
+        if ($LASTEXITCODE -gt 1) { return $set }
+        foreach ($i in @($ignored)) { if ($i) { $set[$i] = $true } }
+    } finally { Pop-Location }
+    return $set
+}
+
 function Find-Programs {
     param([string]$Root = (Get-Location).Path, [string]$Program)
-    $skip = @('node_modules','__tests__','.git','.harness','.svn','.hg','target','build','dist','bin','obj','out','.idea','.vscode','.vs')
-    $progs = @()
-    Get-ChildItem -LiteralPath $Root -Recurse -Directory -Force |
-        Where-Object {
-            $name = $_.Name
-            if ($name.StartsWith('.')) { return $false }
-            if ($skip -contains $name) { return $false }
-            $rel = $_.FullName.Substring($Root.Length).TrimStart('\','/')
-            $parts = $rel -split '[\\/]'
-            foreach ($p in $parts) {
-                if ($p.StartsWith('.')) { return $false }
-                if ($skip -contains $p) { return $false }
+    $skip = @('node_modules','__tests__','.git','.harness','.svn','.hg')
+    $candidates = @(
+        Get-ChildItem -LiteralPath $Root -Recurse -Directory -Force |
+            Where-Object {
+                $name = $_.Name
+                if ($name -eq '.git' -or $name -eq '.harness') { return $false }
+                $rel = $_.FullName.Substring($Root.Length).TrimStart('\','/')
+                $parts = $rel -split '[\\/]'
+                foreach ($p in $parts) {
+                    if ($skip -contains $p) { return $false }
+                }
+                return $true
             }
-            return $true
-        } |
-        ForEach-Object {
-            $dir = $_
-            $hasManifest = Test-Path (Join-Path $dir.FullName 'harness.toml')
-            $hasConv = @(@('install','build','run','clean') | Where-Object {
-                Test-Path (Join-Path $dir.FullName "$_.ps1")
-            })
-            if ($hasManifest -or $hasConv.Count -gt 0) {
-                if (-not $Program -or $dir.Name -eq $Program) {
-                    $progs += [PSCustomObject]@{
-                        Path = $dir.FullName
-                        Name = $dir.Name
-                        HasManifest = $hasManifest
-                    }
+    )
+    $ignored = Get-GitIgnoredSet -Root $Root -Paths ($candidates | ForEach-Object { $_.FullName })
+    $progs = @()
+    foreach ($dir in $candidates) {
+        if ($ignored.ContainsKey($dir.FullName)) { continue }
+        $hasManifest = Test-Path (Join-Path $dir.FullName 'harness.toml')
+        $hasConv = @(@('install','build','run','clean') | Where-Object {
+            Test-Path (Join-Path $dir.FullName "$_.ps1")
+        })
+        if ($hasManifest -or $hasConv.Count -gt 0) {
+            if (-not $Program -or $dir.Name -eq $Program) {
+                $progs += [PSCustomObject]@{
+                    Path = $dir.FullName
+                    Name = $dir.Name
+                    HasManifest = $hasManifest
                 }
             }
         }
+    }
     return @($progs)
 }
 

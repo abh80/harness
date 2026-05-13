@@ -1,8 +1,9 @@
 [CmdletBinding(SupportsShouldProcess)]
-param([string]$Path = (Get-Location).Path, [switch]$All, [string]$Program, [switch]$Refs)
+param([string]$Path = (Get-Location).Path, [switch]$All, [string]$Program, [switch]$Refs, [string]$Recurse)
 Set-StrictMode -Version Latest
 . $PSScriptRoot\lib\common.ps1
 
+if ($Recurse) { $Path = (Resolve-Path -LiteralPath $Recurse).Path; $All = $true }
 $progs = Find-Programs -Root $Path -Program $Program
 $fail = 0
 foreach ($p in $progs) {
