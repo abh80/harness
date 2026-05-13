@@ -1,5 +1,7 @@
 # Harness
 
+[![npm](https://img.shields.io/npm/v/create-snap-harness.svg)](https://www.npmjs.com/package/create-snap-harness?activeTab=readme)
+
 Harness is a simple diff based testing framework, written in pure native powershell/bash script. Simple and flexible to install, works with any kind of project.
 
 You write a program, hit `record` to save what it prints, and from then on `test` runs it again and yells if anything changed. No clever assertions, no DSL, no framework to learn. If your program prints stuff, you can test it.
