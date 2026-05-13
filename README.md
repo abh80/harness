@@ -1,5 +1,3 @@
-> WIP: not published in npm yet.
-
 # Harness
 
 Harness is a simple diff based testing framework, written in pure native powershell/bash script. Simple and flexible to install, works with any kind of project.
